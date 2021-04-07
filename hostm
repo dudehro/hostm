@@ -86,13 +86,14 @@ function edit_config() {
 }
 
 function sshfs_to_host() {
-    HOST="$1"
-    load_host_environment
-    mkdir -p "$HOME/mountpoints/$1"
-    EXEC_CMD="sshfs -p $SSH_PORT $SSH_CONNECT_STRING:/ $HOME/mountpoints/$1"
-    echo "$EXEC_CMD"
-    #exec $EXEC_CMD
-    eval "$EXEC_CMD"
+	HOST="$1"
+	load_host_environment
+	mkdir -p "$HOME/mountpoints/$1"
+   	echo "currently not implementet correctly!!! aborting." 
+	#EXEC_CMD="sshfs -p $SSH_PORT $SSH_CONNECT_STRING:/ $HOME/mountpoints/$1"
+	#echo "$EXEC_CMD"
+	#exec $EXEC_CMD
+	#eval "$EXEC_CMD"
 }
 
 function copy_id(){
