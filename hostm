@@ -1,0 +1,194 @@
+#!/bin/bash
+
+# Pfad dieses Scriptes bestimmen
+real=$(realpath "$0")
+script_pfad=$(dirname "$real")
+HOST_CONFIG_DIR="$script_pfad/host_config"
+
+function nvl() {
+    var="$1"
+    if [ -z "$var" ]
+    then
+        echo ""
+    else
+        echo "$1"
+    fi
+}
+
+function load_host_environment(){
+    #echo "Lade Umgebung für $HOST"
+    exists_host_config
+    source "$HOST_CONFIG_DIR"/"$HOST"/host.conf
+    export SSH_CONNECT_STRING
+    SSH_CONNECT_STRING=$(nvl "$SSH_CONNECT_STRING")
+    export SSH_PORT
+    SSH_PORT=$(nvl "$SSH_PORT")
+}
+
+function clear_host_environment(){
+	SSH_CONNECT_STRING=""
+	SSH_PORT=""
+}
+
+function echo_host_config() {
+	HOST="$1"
+	exists_host_config
+	load_host_environment
+	echo "SSH-Connectstring: $SSH_CONNECT_STRING"
+	echo "SSH-Port: $SSH_PORT"
+}
+
+# builds the SSH-Connect-String
+# host environment has to be loaded before
+function get_ssh_string(){
+	if [ ! "$SSH_PORT" -eq 22 ]; then
+		SSH_STRING="ssh -p $SSH_PORT $SSH_CONNECT_STRING"
+	else
+		SSH_STRING="ssh $SSH_CONNECT_STRING"
+	fi
+	echo "$SSH_STRING"
+}
+
+function exists_host_config() {
+    if [ ! -f "$HOST_CONFIG_DIR/$HOST/host.conf" ]; then
+        echo "Konfiguration für Host nicht gefunden $HOST_CONFIG_DIR/$HOST/host.conf"
+    fi
+}
+
+function ssh_to_host() {
+	HOST="$1"
+	load_host_environment
+	EXEC_SSH=$(get_ssh_string)
+	echo "Verbinde mit $EXEC_SSH"
+	exec $EXEC_SSH
+	clear_host_environment
+}
+
+function scp_to_host() {
+    HOST="$1"
+    load_host_environment
+    EXEC_SCP="scp -P $SSH_PORT -r $2 $SSH_CONNECT_STRING:$SCRIPT_LOCATION/"
+    echo "$EXEC_SCP"
+    exec $EXEC_SCP
+}
+
+function help() {
+	echo "print HOST        - listet die Konfiguration auf"
+	echo "ssh HOST          - ssh zum Host"
+	echo "scp HOST SOURCE   - kopiert die Quelle nach \$SCRIPT_LOCATION"
+	echo "edit HOST         - Config des Hostes bearbeiten"
+	echo "copy-id HOST	- RSA-Schlüssel kopieren"
+	echo "help              - zeigt diese Hilfe"
+}
+
+function edit_config() {
+    nano $HOST_CONFIG_DIR/$1/host.conf
+}
+
+function sshfs_to_host() {
+    HOST="$1"
+    load_host_environment
+    mkdir -p "$HOME/mountpoints/$1"
+    EXEC_CMD="sshfs -p $SSH_PORT $SSH_CONNECT_STRING:/ $HOME/mountpoints/$1"
+    echo "$EXEC_CMD"
+    #exec $EXEC_CMD
+    eval "$EXEC_CMD"
+}
+
+function copy_id(){
+	HOST="$1"
+	if [ ! -f ~/.ssh/id_rsa.pub ]; then
+		echo "HINWEIS: RSA-Schlüssel nicht vorhanden, wird erstellt."
+		echo "ssh-keygen -t rsa -b 4096"
+		ssh-keygen -t rsa -b 4096
+	fi
+	load_host_environment
+	if [ "$SSH_PORT" != "" ]; then
+		SSH_PORT=" -p $SSH_PORT "
+	fi
+	EXEC_CMD="ssh-copy-id $SSH_PORT $SSH_CONNECT_STRING"
+	echo "$EXEC_CMD"
+	#eval "$EXEC_CMD"
+	bash -c "$EXEC_CMD"
+	clear_host_environment
+}
+
+function copy_id_to_all_hosts(){
+	for HOSTDIR in $HOST_CONFIG_DIR/*
+	do
+		HOST=$(basename "$HOSTDIR")
+		echo "========================================"
+		echo "HOST: $HOST"
+		copy_id "$HOST"
+	done
+}
+
+function test_ssh_all(){
+	for HOSTDIR in "$HOST_CONFIG_DIR"/*
+	do
+		HOST=$(basename "$HOSTDIR")
+		ssh_to_host "$HOST"
+	done
+}
+
+function execute_cmd_on_all_hosts(){
+	CMD="$1"
+        for HOSTDIR in $HOST_CONFIG_DIR/*
+        do
+          	HOST=$(basename "$HOSTDIR")
+                echo "========================================"
+                echo "HOST: $HOST"
+		echo "Command: $CMD"
+                execute_cmd_on_host "$HOST" "$CMD"
+        done
+}
+
+function execute_cmd_on_host(){
+	HOST=$1
+	CMD=$2
+	load_host_environment
+	SSH_STRING=$(get_ssh_string)
+	bash -c "$SSH_STRING '$CMD'"
+	clear_host_environment
+}
+
+case "$1" in
+	print)
+		echo_host_config "$2"
+	;;
+	ssh)
+		ssh_to_host "$2"
+	;;
+	scp)
+		scp_to_host "$2" "$3"
+	;;
+	edit)
+		edit_config "$2"
+	;;
+	help)
+		help
+	;;
+	sshfs)
+		sshfs_to_host "$2"
+	;;
+	copy-id)
+		copy_id "$2"
+	;;
+	copy-id-to-all)
+		copy_id_to_all_hosts
+	;;
+	test-ssh-all)
+		test_ssh_all
+	;;
+	execute-cmd)
+		execute_cmd_on_host "$2" "$3"
+	;;
+	execute-cmd-all-hosts)
+		execute_cmd_on_all_hosts "$2"
+	;;
+	*)
+    		help
+	;;
+esac
+
+exit 0
