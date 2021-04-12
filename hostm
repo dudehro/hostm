@@ -42,7 +42,6 @@ function echo_host_config() {
 	echo "SSH-Port: $SSH_PORT"
 }
 
-
 function exists_host_config() {
     if [ ! -f "$HOST_CONFIG_DIR/$HOST/host.conf" ]; then
         echo "Konfiguration für Host nicht gefunden $HOST_CONFIG_DIR/$HOST/host.conf"
@@ -52,14 +51,14 @@ function exists_host_config() {
 function ssh_to_host() {
 	HOST="$1"
 	load_host_environment
-	ssh -p "$SSH_PORT" "$SSH_CONNECT_STRING"
+	(ssh -p "$SSH_PORT" "$SSH_CONNECT_STRING")
 	clear_host_environment
 }
 
 function scp_to_host() {
 	HOST="$1"
 	load_host_environment
-	scp -P "$SSH_PORT" -r "$2" "$SSH_CONNECT_STRING:$3"
+	(scp -P "$SSH_PORT" -r "$2" "$SSH_CONNECT_STRING:$3")
 	clear_host_environment
 }
 
@@ -87,7 +86,7 @@ function sshfs_to_host() {
 	load_host_environment
 	sshfs_mountpoint="$HOME/mountpoints/$1"
 	mkdir -p "$sshfs_mountpoint"
-	sshfs "$SSH_CONNECT_STRING:/" "$sshfs_mountpoint" -p "$SSH_PORT"
+	(sshfs "$SSH_CONNECT_STRING:/" "$sshfs_mountpoint" -p "$SSH_PORT")
 	if [ $? -eq 0 ]; then
 		echo "Mountpoint $sshfs_mountpoint"
 	fi
@@ -107,7 +106,7 @@ function copy_id(){
 	fi
 	#diect call of ssh-copy-id doesn't work somehow
 	EXEC_CMD="ssh-copy-id $SSH_PORT $SSH_CONNECT_STRING"
-	exec $EXEC_CMD
+	(exec $EXEC_CMD)
 	clear_host_environment
 }
 
@@ -117,7 +116,7 @@ function copy_id_to_all_hosts(){
 		HOST=$(basename "$HOSTDIR")
 		echo "========================================"
 		echo "HOST: $HOST"
-		copy_id "$HOST"
+		(copy_id "$HOST")
 	done
 }
 
@@ -143,7 +142,7 @@ function execute_cmd_on_host(){
 	load_host_environment
 	echo "HOST: $HOST"
 	echo "CMD: $CMD"
-	ssh -p "$SSH_PORT" "$SSH_CONNECT_STRING" $CMD
+	(ssh -p "$SSH_PORT" "$SSH_CONNECT_STRING" $CMD)
 	clear_host_environment
 }
 
