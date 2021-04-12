@@ -129,9 +129,7 @@ function execute_cmd_on_all_hosts(){
         for HOSTDIR in $HOST_CONFIG_DIR/*
         do
           	HOST=$(basename "$HOSTDIR")
-                echo "========================================"
-                echo "HOST: $HOST"
-		echo "Command: $CMD"
+		echo "$HOST"
                 execute_cmd_on_host "$HOST" "$CMD"
         done
 }
@@ -140,8 +138,6 @@ function execute_cmd_on_host(){
 	HOST=$1
 	CMD="$2"
 	load_host_environment
-	echo "HOST: $HOST"
-	echo "CMD: $CMD"
 	(ssh -p "$SSH_PORT" "$SSH_CONNECT_STRING" $CMD)
 	clear_host_environment
 }
