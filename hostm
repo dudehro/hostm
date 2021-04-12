@@ -63,17 +63,17 @@ function scp_to_host() {
 }
 
 function help() {
-	echo "print [HOST]"
-	echo "ssh [HOST]"
-	echo "scp [HOST] [SRC] [DEST]"
-	echo "edit [HOST]"
-        echo "help"
-        echo "sshfs [HOST]"
-        echo "copy-id [HOST]"
-        echo "copy-id-to-all"
-        echo "test-ssh-all"
-        echo "bash [HOST] [CMD], see also https://www.shellhacks.com/ssh-execute-remote-command-script-linux/"
-        echo "bash-all-hosts [CMD]"
+	echo "--print [HOST]"
+	echo "--ssh [HOST]"
+	echo "--scp [HOST] [SRC] [DEST]"
+	echo "--edit [HOST]"
+        echo "--help"
+        echo "--sshfs [HOST]"
+        echo "--copy-id [HOST]"
+        echo "--copy-id-all"
+        echo "--test-ssh-all"
+        echo "--bash [HOST] [CMD]  see also https://www.shellhacks.com/ssh-execute-remote-command-script-linux/"
+        echo "--bash-all [CMD], output for each host will be written into scriptpath/out/$HOSTNAME"
 }
 
 function edit_config() {
