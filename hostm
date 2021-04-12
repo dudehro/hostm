@@ -15,6 +15,12 @@ function nvl() {
     fi
 }
 
+function mkdir_out(){
+        if [ ! -d "$script_pfad/out" ]; then
+                mkdir "$script_pfad/out"
+        fi
+}
+
 function load_host_environment(){
 	#echo "Lade Umgebung für $HOST"
 	exists_host_config
@@ -127,10 +133,7 @@ function test_ssh_all(){
 
 function execute_cmd_on_all_hosts(){
 	CMD="$1"
-	if [ ! -d "$script_pfad/out" ]; then
-		mkdir "$script_pfad/out"
-	fi
-
+	mkdir_out
         for HOSTDIR in $HOST_CONFIG_DIR/*
         do
           	HOST=$(basename "$HOSTDIR")
@@ -156,6 +159,7 @@ function execute_script_on_host(){
 
 function execute_script_on_all_hosts(){
 	SCRIPT=$1
+	mkdir_out
         for HOSTDIR in $HOST_CONFIG_DIR/*
         do
                 HOST=$(basename "$HOSTDIR")
@@ -203,6 +207,7 @@ case "$1" in
 	;;
 	--script-all)
 		execute_script_on_all_hosts "$2"
+	;;
 	*)
     		help
 	;;
