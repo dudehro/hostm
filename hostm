@@ -74,7 +74,6 @@ function help() {
         echo "test-ssh-all"
         echo "bash [HOST] [CMD], see also https://www.shellhacks.com/ssh-execute-remote-command-script-linux/"
         echo "bash-all-hosts [CMD]"
-
 }
 
 function edit_config() {
@@ -126,11 +125,15 @@ function test_ssh_all(){
 
 function execute_cmd_on_all_hosts(){
 	CMD="$1"
+	if [ ! -d "$script_pfad/out" ]; then
+		mkdir "$script_pfad/out"
+	fi
+
         for HOSTDIR in $HOST_CONFIG_DIR/*
         do
           	HOST=$(basename "$HOSTDIR")
 		echo "$HOST"
-                execute_cmd_on_host "$HOST" "$CMD"
+                execute_cmd_on_host "$HOST" "$CMD" >> "$script_pfad/out/$HOST"
         done
 }
 
@@ -152,37 +155,37 @@ function execute_script_on_host(){
 
 
 case "$1" in
-	print)
+	--print)
 		echo_host_config "$2"
 	;;
-	ssh)
+	--ssh)
 		ssh_to_host "$2"
 	;;
-	scp)
+	--scp)
 		scp_to_host "$2" "$3"
 	;;
-	edit)
+	--edit)
 		edit_config "$2"
 	;;
-	help)
+	--help)
 		help
 	;;
-	sshfs)
+	--sshfs)
 		sshfs_to_host "$2"
 	;;
-	copy-id)
+	--copy-id)
 		copy_id "$2"
 	;;
-	copy-id-to-all)
+	--copy-id-all)
 		copy_id_to_all_hosts
 	;;
-	test-ssh-all)
+	--test-ssh-all)
 		test_ssh_all
 	;;
-	bash)
+	--bash)
 		execute_cmd_on_host "$2" "$3"
 	;;
-	bash-all-hosts)
+	--bash-all)
 		execute_cmd_on_all_hosts "$2"
 	;;
 	*)
