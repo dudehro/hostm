@@ -74,6 +74,8 @@ function help() {
         echo "--test-ssh-all"
         echo "--bash [HOST] [CMD]  see also https://www.shellhacks.com/ssh-execute-remote-command-script-linux/"
         echo "--bash-all [CMD], output for each host will be written into scriptpath/out/$HOSTNAME"
+	echo "--script [HOST] [SCRIPT]"
+	echo "--script-all [SCRIPT] like --bash-all but executes a script"
 }
 
 function edit_config() {
@@ -148,11 +150,19 @@ function execute_cmd_on_host(){
 function execute_script_on_host(){
         HOST=$1
         load_host_environment
-        SSH_CONNECT=$(get_ssh_string)
-#        exec "$SSH_CONNECT" 'bash -c' << EOF
+	ssh -p "$SSH_PORT" "$SSH_CONNECT_STRING" 'bash -s' < $2
         clear_host_environment
 }
 
+function execute_script_on_all_hosts(){
+	SCRIPT=$1
+        for HOSTDIR in $HOST_CONFIG_DIR/*
+        do
+                HOST=$(basename "$HOSTDIR")
+                echo "$HOST"
+		(execute_script_on_host "$HOST" "$SCRIPT" ) >> "$script_pfad/out/$HOST"
+	done
+}
 
 case "$1" in
 	--print)
@@ -188,6 +198,11 @@ case "$1" in
 	--bash-all)
 		execute_cmd_on_all_hosts "$2"
 	;;
+	--script)
+		execute_script_on_host "$2" "$3"
+	;;
+	--script-all)
+		execute_script_on_all_hosts "$2"
 	*)
     		help
 	;;

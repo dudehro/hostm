@@ -23,4 +23,6 @@ hostm --copy-id-all        copy ssh public key to all hosts
 hostm --test-ssh-all
 hostm --bash [HOST] [CMD]     execute bash commands, see also https://www.shellhacks.com/ssh-execute-remote-command-script-linux/
 hostm --bash-all [CMD]        output for each host will be written into scriptpath/out/$HOSTNAME
+hostm --script [HOST] [SCRIPT]
+hostm --script-all [SCRIPT]	like --bash-all but executes a script
 ```
