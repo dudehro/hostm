@@ -16,13 +16,17 @@ function nvl() {
 }
 
 function load_host_environment(){
-    #echo "Lade Umgebung für $HOST"
-    exists_host_config
-    source "$HOST_CONFIG_DIR"/"$HOST"/host.conf
-    export SSH_CONNECT_STRING
-    SSH_CONNECT_STRING=$(nvl "$SSH_CONNECT_STRING")
-    export SSH_PORT
-    SSH_PORT=$(nvl "$SSH_PORT")
+	#echo "Lade Umgebung für $HOST"
+	exists_host_config
+	source "$HOST_CONFIG_DIR"/"$HOST"/host.conf
+	export SSH_CONNECT_STRING
+	SSH_CONNECT_STRING=$(nvl "$SSH_CONNECT_STRING")
+	export SSH_PORT
+	if [ -z $SSH_PORT ]; then
+		SSH_PORT="22"
+	else
+		SSH_PORT="$SSH_PORT"
+	fi
 }
 
 function clear_host_environment(){
@@ -38,16 +42,6 @@ function echo_host_config() {
 	echo "SSH-Port: $SSH_PORT"
 }
 
-# builds the SSH-Connect-String
-# host environment has to be loaded before
-function get_ssh_string(){
-	if [ ! "$SSH_PORT" -eq 22 ]; then
-		SSH_STRING="ssh -p $SSH_PORT $SSH_CONNECT_STRING"
-	else
-		SSH_STRING="ssh $SSH_CONNECT_STRING"
-	fi
-	echo "$SSH_STRING"
-}
 
 function exists_host_config() {
     if [ ! -f "$HOST_CONFIG_DIR/$HOST/host.conf" ]; then
@@ -58,27 +52,30 @@ function exists_host_config() {
 function ssh_to_host() {
 	HOST="$1"
 	load_host_environment
-	EXEC_SSH=$(get_ssh_string)
-	echo "Verbinde mit $EXEC_SSH"
-	exec $EXEC_SSH
+	ssh -p "$SSH_PORT" "$SSH_CONNECT_STRING"
 	clear_host_environment
 }
 
 function scp_to_host() {
-    HOST="$1"
-    load_host_environment
-    EXEC_SCP="scp -P $SSH_PORT -r $2 $SSH_CONNECT_STRING:$SCRIPT_LOCATION/"
-    echo "$EXEC_SCP"
-    exec $EXEC_SCP
+	HOST="$1"
+	load_host_environment
+	scp -P "$SSH_PORT" -r "$2" "$SSH_CONNECT_STRING:$3"
+	clear_host_environment
 }
 
 function help() {
-	echo "print HOST        - listet die Konfiguration auf"
-	echo "ssh HOST          - ssh zum Host"
-	echo "scp HOST SOURCE   - kopiert die Quelle nach \$SCRIPT_LOCATION"
-	echo "edit HOST         - Config des Hostes bearbeiten"
-	echo "copy-id HOST	- RSA-Schlüssel kopieren"
-	echo "help              - zeigt diese Hilfe"
+	echo "print [HOST]"
+	echo "ssh [HOST]"
+	echo "scp [HOST] [SRC] [DEST]"
+	echo "edit [HOST]"
+        echo "help"
+        echo "sshfs [HOST]"
+        echo "copy-id [HOST]"
+        echo "copy-id-to-all"
+        echo "test-ssh-all"
+        echo "bash [HOST] [CMD], see also https://www.shellhacks.com/ssh-execute-remote-command-script-linux/"
+        echo "bash-all-hosts [CMD]"
+
 }
 
 function edit_config() {
@@ -88,12 +85,13 @@ function edit_config() {
 function sshfs_to_host() {
 	HOST="$1"
 	load_host_environment
-	mkdir -p "$HOME/mountpoints/$1"
-   	echo "currently not implementet correctly!!! aborting." 
-	#EXEC_CMD="sshfs -p $SSH_PORT $SSH_CONNECT_STRING:/ $HOME/mountpoints/$1"
-	#echo "$EXEC_CMD"
-	#exec $EXEC_CMD
-	#eval "$EXEC_CMD"
+	sshfs_mountpoint="$HOME/mountpoints/$1"
+	mkdir -p "$sshfs_mountpoint"
+	sshfs "$SSH_CONNECT_STRING:/" "$sshfs_mountpoint" -p "$SSH_PORT"
+	if [ $? -eq 0 ]; then
+		echo "Mountpoint $sshfs_mountpoint"
+	fi
+	clear_host_environment
 }
 
 function copy_id(){
@@ -107,10 +105,9 @@ function copy_id(){
 	if [ "$SSH_PORT" != "" ]; then
 		SSH_PORT=" -p $SSH_PORT "
 	fi
+	#diect call of ssh-copy-id doesn't work somehow
 	EXEC_CMD="ssh-copy-id $SSH_PORT $SSH_CONNECT_STRING"
-	echo "$EXEC_CMD"
-	#eval "$EXEC_CMD"
-	bash -c "$EXEC_CMD"
+	exec $EXEC_CMD
 	clear_host_environment
 }
 
@@ -125,11 +122,7 @@ function copy_id_to_all_hosts(){
 }
 
 function test_ssh_all(){
-	for HOSTDIR in "$HOST_CONFIG_DIR"/*
-	do
-		HOST=$(basename "$HOSTDIR")
-		ssh_to_host "$HOST"
-	done
+	execute_cmd_on_all_hosts "echo 'CMD over SSH is working'"
 }
 
 function execute_cmd_on_all_hosts(){
@@ -146,12 +139,22 @@ function execute_cmd_on_all_hosts(){
 
 function execute_cmd_on_host(){
 	HOST=$1
-	CMD=$2
+	CMD="$2"
 	load_host_environment
-	SSH_STRING=$(get_ssh_string)
-	bash -c "$SSH_STRING '$CMD'"
+	echo "HOST: $HOST"
+	echo "CMD: $CMD"
+	ssh -p "$SSH_PORT" "$SSH_CONNECT_STRING" $CMD
 	clear_host_environment
 }
+
+function execute_script_on_host(){
+        HOST=$1
+        load_host_environment
+        SSH_CONNECT=$(get_ssh_string)
+#        exec "$SSH_CONNECT" 'bash -c' << EOF
+        clear_host_environment
+}
+
 
 case "$1" in
 	print)
@@ -181,10 +184,10 @@ case "$1" in
 	test-ssh-all)
 		test_ssh_all
 	;;
-	execute-cmd)
+	bash)
 		execute_cmd_on_host "$2" "$3"
 	;;
-	execute-cmd-all-hosts)
+	bash-all-hosts)
 		execute_cmd_on_all_hosts "$2"
 	;;
 	*)
