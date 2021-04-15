@@ -6,4 +6,5 @@ if [ -d ~/postgis_migration ]; then
 else
 	cd ~
 	git clone https://github.com/dudehro/postgis_migration.git
-if
+fi
+exit 0

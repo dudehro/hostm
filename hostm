@@ -70,6 +70,7 @@ function scp_to_host() {
 
 function help() {
 	echo "--print [HOST]"
+	echo "--ls"
 	echo "--ssh [HOST]"
 	echo "--scp [HOST] [SRC] [DEST]"
 	echo "--edit [HOST]"
@@ -168,6 +169,13 @@ function execute_script_on_all_hosts(){
 	done
 }
 
+function list_hosts(){
+	for HOSTDIR in $HOST_CONFIG_DIR/*
+	do
+		echo $(basename "$HOSTDIR")
+	done
+}
+
 case "$1" in
 	--print)
 		echo_host_config "$2"
@@ -207,6 +215,9 @@ case "$1" in
 	;;
 	--script-all)
 		execute_script_on_all_hosts "$2"
+	;;
+	--ls)
+		list_hosts
 	;;
 	*)
     		help

@@ -13,6 +13,7 @@ If SSH_PORT is ommited 22 is default.
 ## possibilities
 ```
 hostm --print [HOST]          prints host.conf
+hostm --ls
 hostm --ssh [HOST]
 hostm --scp [HOST] [SRC] [DEST]
 hostm --edit [HOST]
