@@ -1,4 +1,8 @@
 #!/bin/bash
+if [ $(whoami) != 'gisadmin' ]; then
+	"nicht als gisadmin angemeldet, abbruch"
+	exit 1
+fi
 
 if [ -d ~/postgis_migration ]; then
 	cd ~/postgis_migration
